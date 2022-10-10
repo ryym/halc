@@ -58,6 +58,42 @@ describe("Store", () => {
       expect(loadable.state).toEqual("loading");
       expect(await loadable.promise()).toEqual(5);
     });
+
+    it("reuses current loading if exists", async () => {
+      const pauser = new Pauser();
+      let called = 0;
+      const numLoader = loader({
+        load: async () => {
+          called += 1;
+          await pauser.pause();
+          return called;
+        },
+      });
+      const store = createStore();
+
+      const loadable1 = store.load(numLoader);
+      const loadable2 = store.load(numLoader);
+      expect([loadable1.state, loadable2.state]).toEqual(["loading", "loading"]);
+
+      pauser.resume();
+      const values = await Promise.all([loadable1.promise(), loadable2.promise()]);
+      expect(values).toEqual([1, 1]);
+    });
+
+    it("skips loading if cache exists", async () => {
+      let called = 0;
+      const numLoader = loader({
+        load: async () => {
+          called += 1;
+          return 5;
+        },
+      });
+      const store = createStore();
+
+      expect(await store.load(numLoader).promise()).toEqual(5);
+      expect(await store.load(numLoader).promise()).toEqual(5);
+      expect(called).toEqual(1);
+    });
   });
 
   describe("Block and Action", () => {
