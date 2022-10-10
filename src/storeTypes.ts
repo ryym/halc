@@ -18,6 +18,7 @@ export interface Block<V> {
 
 export type BlockUpdateConfigBuilder<V> = (
   on: BlockUpdateMapper<V>,
+  toolbox: BlockUpdateToolbox,
 ) => readonly BlockUpdateConfig<V, any[]>[];
 
 export type BlockUpdateMapper<V> = <P extends any[]>(
@@ -28,6 +29,10 @@ export type BlockUpdateMapper<V> = <P extends any[]>(
 export interface BlockUpdateConfig<V, P extends any[]> {
   message: Message<P>;
   update: BlockUpdater<V, P>;
+}
+
+export interface BlockUpdateToolbox {
+  readonly invlaidate: (loader: Loader<any>) => void;
 }
 
 export type BlockUpdater<V, P extends any[]> = (value: V, ...payload: P) => V;

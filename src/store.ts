@@ -9,7 +9,7 @@ import {
   LoadableValue,
 } from "./loadable";
 import { MessageHub } from "./messageHub";
-import { Action, Block, Loader, Store, Unsubscribe } from "./storeTypes";
+import { Action, Block, BlockUpdateToolbox, Loader, Store, Unsubscribe } from "./storeTypes";
 
 export const createStore = (): Store => {
   return new StoreEntity();
@@ -53,6 +53,13 @@ class StoreEntity implements Store {
   private readonly messageHub = new MessageHub();
   private readonly blockStates = new Map<string, BlockState<any>>();
   private readonly loaderStates = new Map<string, LoaderState<any>>();
+  private readonly blockUpdateToolbox: BlockUpdateToolbox;
+
+  constructor() {
+    this.blockUpdateToolbox = Object.freeze({
+      invlaidate: this.invalidateCache,
+    });
+  }
 
   get = <V>(block: Block<V>): V => {
     return this.getBlockState(block).current;
@@ -178,7 +185,7 @@ class StoreEntity implements Store {
   private initializeBlockState<V>(block: Block<V>): BlockState<V> {
     const updateConfigs = block.buildUpdateConfigs((message, update) => {
       return { message, update };
-    });
+    }, this.blockUpdateToolbox);
 
     const unsubscribes: Unsubscribe[] = [];
     updateConfigs.forEach((c) => {

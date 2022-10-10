@@ -150,4 +150,43 @@ describe("Store", () => {
       expect(store.get(nameOptions)).toEqual(["Alice", "Bob"]);
     });
   });
+
+  describe("Block and Action and Loader", () => {
+    test("Block can invalidate loader cache on update", async () => {
+      let users = [{ name: "Alice" }, { name: "Bob" }];
+      const usersLoader = loader({
+        load: () => Promise.resolve([...users]),
+      });
+      const nameOptions = block<string[]>({
+        default: () => [],
+        update: (on, t) => [
+          on(usersLoader.done, (_, users) => users.map((u) => u.name)),
+          // FIXME: Currently we cannot omit unused parameter :(
+          on(addUserAction.done, (names, _) => {
+            t.invlaidate(usersLoader);
+            return names;
+          }),
+        ],
+      });
+      const addUserAction = action({
+        run: async (_t, name: string) => {
+          users = [...users, { name }];
+        },
+      });
+      const store = createStore();
+
+      // FIXME: Currently we need to initialize a block before loader to set
+      // loader result to block :(
+      store.get(nameOptions);
+
+      await store.load(usersLoader).promise();
+      expect(store.get(nameOptions)).toEqual(["Alice", "Bob"]);
+      await store.load(usersLoader).promise();
+      expect(store.get(nameOptions)).toEqual(["Alice", "Bob"]);
+
+      await store.dispatch(addUserAction, "Carol");
+      await store.load(usersLoader).promise();
+      expect(store.get(nameOptions)).toEqual(["Alice", "Bob", "Carol"]);
+    });
+  });
 });
