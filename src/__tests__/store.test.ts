@@ -96,6 +96,14 @@ describe("Store", () => {
     });
   });
 
+  describe("Store.cancelLoad", () => {
+    it.todo("cancels loading if loading is currently running");
+  });
+
+  describe("Store.invalidateCache", () => {
+    it.todo("invalidates loader cache");
+  });
+
   describe("Block and Action", () => {
     test("Block can update its value when Action is dispatched", () => {
       const numState = block({

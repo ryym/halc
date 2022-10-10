@@ -1,3 +1,4 @@
+import { unreachable } from "./lib/unreachable";
 import {
   Loadable,
   loadableError,
@@ -43,6 +44,10 @@ type LoaderCache<V> =
       readonly state: "Error";
       readonly loadable: LoadableError<V>;
     };
+
+export interface CancelLoadParams {
+  readonly markAsStale?: boolean;
+}
 
 class StoreEntity implements Store {
   private readonly messageHub = new MessageHub();
@@ -112,6 +117,44 @@ class StoreEntity implements Store {
       return result.then(handleResult) as R;
     } else {
       return handleResult(result as Awaited<R>);
+    }
+  };
+
+  cancelLoad = <V>(loader: Loader<V>, params: CancelLoadParams = {}): boolean => {
+    const state = this.getLoaderState(loader);
+    if (state.cache.state !== "Loading") {
+      return false;
+    }
+    state.cache.cancelled = true;
+
+    const { latestValue } = state.cache.loadable;
+    if (latestValue == null) {
+      state.cache = { state: "Stale", loadable: null };
+    } else {
+      state.cache = {
+        state: params.markAsStale ? "Stale" : "Fresh",
+        loadable: loadableValue(latestValue),
+      };
+    }
+    return true;
+  };
+
+  invalidateCache = (loader: Loader<any>): void => {
+    const state = this.getLoaderState(loader);
+    switch (state.cache.state) {
+      case "Loading": {
+        this.cancelLoad(loader, { markAsStale: true });
+        return;
+      }
+      case "Fresh":
+        state.cache = { state: "Stale", loadable: state.cache.loadable };
+        return;
+      case "Stale":
+      case "Error": {
+        return;
+      }
+      default:
+        unreachable(state.cache);
     }
   };
 
