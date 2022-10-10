@@ -165,6 +165,10 @@ class StoreEntity implements Store {
     }
   };
 
+  getLoaderCache = <V>(loader: Loader<V>): Loadable<V> | null => {
+    return this.getLoaderState(loader).cache.loadable;
+  };
+
   private getBlockState<V>(block: Block<V>): BlockState<V> {
     let state = this.blockStates.get(block.id);
     if (state == null) {
