@@ -149,6 +149,20 @@ describe("Store", () => {
       await store.load(namesLoader).promise();
       expect(store.get(nameOptions)).toEqual(["Alice", "Bob"]);
     });
+
+    test("Block uses latest loader cache when initialized", async () => {
+      const nameOptions = block<string[]>({
+        default: () => [],
+        update: (on) => [on(namesLoader.done, (_, names) => names)],
+      });
+      const namesLoader = loader({
+        load: () => Promise.resolve(["Alice", "Bob"]),
+      });
+      const store = createStore();
+
+      await store.load(namesLoader).promise();
+      expect(store.get(nameOptions)).toEqual(["Alice", "Bob"]);
+    });
   });
 
   describe("Block and Action and Loader", () => {
@@ -173,10 +187,6 @@ describe("Store", () => {
         },
       });
       const store = createStore();
-
-      // FIXME: Currently we need to initialize a block before loader to set
-      // loader result to block :(
-      store.get(nameOptions);
 
       await store.load(usersLoader).promise();
       expect(store.get(nameOptions)).toEqual(["Alice", "Bob"]);

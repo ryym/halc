@@ -9,7 +9,15 @@ import {
   LoadableValue,
 } from "./loadable";
 import { MessageHub } from "./messageHub";
-import { Action, Block, BlockUpdateToolbox, Loader, Store, Unsubscribe } from "./storeTypes";
+import {
+  Action,
+  Block,
+  BlockUpdateConfig,
+  BlockUpdateToolbox,
+  Loader,
+  Store,
+  Unsubscribe,
+} from "./storeTypes";
 
 export const createStore = (): Store => {
   return new StoreEntity();
@@ -172,8 +180,10 @@ class StoreEntity implements Store {
   private getBlockState<V>(block: Block<V>): BlockState<V> {
     let state = this.blockStates.get(block.id);
     if (state == null) {
-      state = this.initializeBlockState(block);
+      const updateConfigs = this.buildBlockUpdateConfigs(block);
+      state = this.initializeBlockState(block, updateConfigs);
       this.blockStates.set(block.id, state);
+      this.setLatestLoaderCachesToBlock(updateConfigs);
     }
     return state;
   }
@@ -186,15 +196,14 @@ class StoreEntity implements Store {
     }
   }
 
-  private initializeBlockState<V>(block: Block<V>): BlockState<V> {
-    const updateConfigs = block.buildUpdateConfigs((trigger, update) => {
-      return { trigger, update };
-    }, this.blockUpdateToolbox);
-
+  private initializeBlockState<V>(
+    block: Block<V>,
+    updateConfigs: readonly BlockUpdateConfig<V, any>[],
+  ): BlockState<V> {
     const unsubscribes: Unsubscribe[] = [];
     updateConfigs.forEach((c) => {
-      const unsubscribe = this.messageHub.subscribe(c.trigger.message, (...payload) => {
-        const value = c.update(this.get(block), ...payload);
+      const unsubscribe = this.messageHub.subscribe(c.trigger.message, (payload) => {
+        const value = c.update(this.get(block), payload);
         this.setBlockValue(block, value);
       });
       unsubscribes.push(unsubscribe);
@@ -206,6 +215,25 @@ class StoreEntity implements Store {
         unsubscribes.forEach((f) => f());
       },
     };
+  }
+
+  private buildBlockUpdateConfigs<V>(block: Block<V>): readonly BlockUpdateConfig<V, any>[] {
+    return block.buildUpdateConfigs((trigger, update) => {
+      return { trigger, update };
+    }, this.blockUpdateToolbox);
+  }
+
+  private setLatestLoaderCachesToBlock<V>(
+    updateConfigs: readonly BlockUpdateConfig<V, any>[],
+  ): void {
+    updateConfigs.forEach((c) => {
+      if (c.trigger.type === "loaderDone") {
+        const loadable = this.getLoaderCache(c.trigger.loader());
+        if (loadable != null) {
+          this.messageHub.notify(c.trigger.message, loadable.latestValue);
+        }
+      }
+    });
   }
 
   private getLoaderState<V>(loader: Loader<V>): LoaderState<V> {
