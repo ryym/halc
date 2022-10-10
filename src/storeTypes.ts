@@ -33,6 +33,7 @@ export interface BlockUpdateConfig<V, P extends any[]> {
 export type BlockUpdater<V, P extends any[]> = (value: V, ...payload: P) => V;
 
 export interface Loader<V> {
+  readonly id: string;
   readonly load: (toolbox: LoaderToolbox) => Promise<V>;
   readonly done: Message<[V]>;
 }
