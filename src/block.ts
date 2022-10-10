@@ -17,6 +17,6 @@ export const block = <V>(config: BlockConfig<V>): Block<V> => {
     default: config.default,
     isSame: config.isSame || Object.is,
     buildUpdateConfigs: config.update || (() => []),
-    changed: defineMessage<[]>({ name: changedMsgName }),
+    changed: defineMessage<never>({ name: changedMsgName }),
   };
 };

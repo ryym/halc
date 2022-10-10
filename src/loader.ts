@@ -12,6 +12,6 @@ export const loader = <V>(config: LoaderConfig<V>): Loader<V> => {
   return {
     id: generateId(),
     load: config.load,
-    done: defineMessage<[V]>({ name: `${msgNameBase}-done` }),
+    done: defineMessage<V>({ name: `${msgNameBase}-done` }),
   };
 };

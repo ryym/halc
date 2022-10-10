@@ -113,13 +113,13 @@ class StoreEntity implements Store {
     return loadable;
   };
 
-  dispatch = <R, Args extends any[]>(action: Action<R, Args>, ...args: Args): R => {
-    this.messageHub.notify(action.dispatched, ...args);
+  dispatch = <R, P>(action: Action<R, P>, payload: P): R => {
+    this.messageHub.notify(action.dispatched, payload);
     const handleResult = (result: Awaited<R>): R => {
       this.messageHub.notify(action.done, result);
       return result;
     };
-    const result = action.run({}, ...args);
+    const result = action.run({}, payload);
     if (result instanceof Promise) {
       return result.then(handleResult) as R;
     } else {
@@ -178,7 +178,7 @@ class StoreEntity implements Store {
     const state = this.getBlockState(block);
     if (state.current !== value) {
       state.current = value;
-      this.messageHub.notify(block.changed);
+      this.messageHub.notify(block.changed, null);
     }
   }
 

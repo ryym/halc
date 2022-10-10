@@ -161,8 +161,7 @@ describe("Store", () => {
         default: () => [],
         update: (on, t) => [
           on(usersLoader.done, (_, users) => users.map((u) => u.name)),
-          // FIXME: Currently we cannot omit unused parameter :(
-          on(addUserAction.done, (names, _) => {
+          on(addUserAction.done, (names) => {
             t.invlaidate(usersLoader);
             return names;
           }),
