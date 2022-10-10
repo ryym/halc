@@ -17,12 +17,12 @@ export interface Block<V> {
 }
 
 export type BlockUpdateConfigBuilder<V> = (
-  on: BlockUpdateMapper<V>
+  on: BlockUpdateMapper<V>,
 ) => readonly BlockUpdateConfig<V, any[]>[];
 
 export type BlockUpdateMapper<V> = <P extends any[]>(
   message: Message<P>,
-  updater: BlockUpdater<V, P>
+  updater: BlockUpdater<V, P>,
 ) => BlockUpdateConfig<V, P>;
 
 export interface BlockUpdateConfig<V, P extends any[]> {

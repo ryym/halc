@@ -24,7 +24,7 @@ export interface LoadableError<T> extends LoadableBase<T> {
 
 export const loadableLoading = <T>(
   promise: Promise<T>,
-  latestValue: T | undefined
+  latestValue: T | undefined,
 ): LoadableLoading<T> => {
   return {
     state: "loading",
