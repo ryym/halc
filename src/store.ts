@@ -84,7 +84,7 @@ class StoreEntity implements Store {
     const finalPromise = promise
       .then((value) => {
         if (!loadingCache.cancelled) {
-          this.messageHub.notify(loader.done, value);
+          this.messageHub.notify(loader.done.message, value);
           state.cache = {
             state: "Fresh",
             loadable: loadableValue(value),
@@ -114,9 +114,9 @@ class StoreEntity implements Store {
   };
 
   dispatch = <R, P>(action: Action<R, P>, payload: P): R => {
-    this.messageHub.notify(action.dispatched, payload);
+    this.messageHub.notify(action.dispatched.message, payload);
     const handleResult = (result: Awaited<R>): R => {
-      this.messageHub.notify(action.done, result);
+      this.messageHub.notify(action.done.message, result);
       return result;
     };
     const result = action.run({}, payload);
@@ -187,13 +187,13 @@ class StoreEntity implements Store {
   }
 
   private initializeBlockState<V>(block: Block<V>): BlockState<V> {
-    const updateConfigs = block.buildUpdateConfigs((message, update) => {
-      return { message, update };
+    const updateConfigs = block.buildUpdateConfigs((trigger, update) => {
+      return { trigger, update };
     }, this.blockUpdateToolbox);
 
     const unsubscribes: Unsubscribe[] = [];
     updateConfigs.forEach((c) => {
-      const unsubscribe = this.messageHub.subscribe(c.message, (...payload) => {
+      const unsubscribe = this.messageHub.subscribe(c.trigger.message, (...payload) => {
         const value = c.update(this.get(block), ...payload);
         this.setBlockValue(block, value);
       });

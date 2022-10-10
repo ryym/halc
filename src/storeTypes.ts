@@ -22,12 +22,23 @@ export type BlockUpdateConfigBuilder<V> = (
 ) => readonly BlockUpdateConfig<V, any>[];
 
 export type BlockUpdateMapper<V> = <P>(
-  message: Message<P>,
+  trigger: BlockUpdateTrigger<P>,
   updater: BlockUpdater<V, P>,
 ) => BlockUpdateConfig<V, P>;
 
+export type BlockUpdateTrigger<P> =
+  | {
+      readonly type: "loaderDone";
+      readonly loader: () => Loader<P>;
+      readonly message: Message<P>;
+    }
+  | {
+      readonly type: "action";
+      readonly message: Message<P>;
+    };
+
 export interface BlockUpdateConfig<V, P> {
-  message: Message<P>;
+  trigger: BlockUpdateTrigger<P>;
   update: BlockUpdater<V, P>;
 }
 
@@ -40,7 +51,7 @@ export type BlockUpdater<V, P> = (value: V, payload: P) => V;
 export interface Loader<V> {
   readonly id: string;
   readonly load: (toolbox: LoaderToolbox) => Promise<V>;
-  readonly done: Message<V>;
+  readonly done: BlockUpdateTrigger<V>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -50,8 +61,8 @@ export interface LoaderToolbox {
 
 export interface Action<R, P> {
   readonly run: (toolbox: ActionToolbox, payload: P) => R;
-  readonly dispatched: Message<P>;
-  readonly done: Message<Awaited<R>>;
+  readonly dispatched: BlockUpdateTrigger<P>;
+  readonly done: BlockUpdateTrigger<Awaited<R>>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
