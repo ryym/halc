@@ -86,7 +86,7 @@ class StoreEntity implements Store {
       return state.cache.loadable;
     }
 
-    const latestValue = state.cache.loadable?.latestValue;
+    const lastLoaded = state.cache.loadable?.lastLoaded;
 
     const promise = loader.load({});
     const finalPromise = promise
@@ -104,13 +104,13 @@ class StoreEntity implements Store {
         if (!loadingCache.cancelled) {
           state.cache = {
             state: "Error",
-            loadable: loadableError(err, latestValue),
+            loadable: loadableError(err, lastLoaded),
           };
         }
         throw err;
       });
 
-    const loadable = loadableLoading(finalPromise, latestValue);
+    const loadable = loadableLoading(finalPromise, lastLoaded);
     const loadingCache = {
       state: "Loading",
       loadable,
@@ -142,13 +142,13 @@ class StoreEntity implements Store {
     }
     state.cache.cancelled = true;
 
-    const { latestValue } = state.cache.loadable;
-    if (latestValue == null) {
+    const { lastLoaded } = state.cache.loadable;
+    if (lastLoaded == null) {
       state.cache = { state: "Stale", loadable: null };
     } else {
       state.cache = {
         state: params.markAsStale ? "Stale" : "Fresh",
-        loadable: loadableValue(latestValue),
+        loadable: loadableValue(lastLoaded.value, lastLoaded.loadedAt),
       };
     }
     return true;
@@ -229,8 +229,8 @@ class StoreEntity implements Store {
     updateConfigs.forEach((c) => {
       if (c.trigger.type === "loaderDone") {
         const loadable = this.getLoaderCache(c.trigger.loader());
-        if (loadable != null) {
-          this.messageHub.notify(c.trigger.message, loadable.latestValue);
+        if (loadable?.lastLoaded != null) {
+          this.messageHub.notify(c.trigger.message, loadable.lastLoaded.value);
         }
       }
     });
