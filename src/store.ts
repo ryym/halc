@@ -42,6 +42,10 @@ type LoaderCache<V> =
       readonly loadable: null | LoadableValue<V>;
     }
   | {
+      readonly state: "MaybeStale";
+      readonly loadable: LoadableValue<V>;
+    }
+  | {
       readonly state: "Fresh";
       readonly loadable: LoadableValue<V>;
     }
@@ -164,8 +168,10 @@ class StoreEntity implements Store {
         return;
       }
       case "Fresh":
+      case "MaybeStale": {
         state.cache = { state: "Stale", loadable: state.cache.loadable };
         return;
+      }
       case "Stale":
       case "Error": {
         return;
