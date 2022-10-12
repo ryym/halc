@@ -3,6 +3,7 @@ import { Message } from "./message";
 
 export interface Store {
   readonly get: <V>(state: Block<V>) => V;
+  readonly setValue: <V>(state: Block<V>, value: V) => void;
   readonly load: <V>(loader: Loader<V>) => Loadable<V>;
   readonly dispatch: <R, P>(action: Action<R, P>, payload: P) => R;
 }
@@ -49,14 +50,17 @@ export interface BlockUpdateToolbox {
 export type BlockUpdater<V, P> = (value: V, payload: P) => V;
 
 export interface Loader<V> {
+  readonly type: "Loader";
   readonly id: string;
   readonly load: (toolbox: LoaderToolbox) => Promise<V>;
   readonly done: BlockUpdateTrigger<V>;
+  readonly invalidated: Message<never>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface LoaderToolbox {
-  // We add some fields soon.
+  readonly get: <V>(state: Block<V>) => V;
+  readonly load: <V>(loader: Loader<V>) => Promise<V>;
 }
 
 export interface Action<R, P> {

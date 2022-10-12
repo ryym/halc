@@ -1,3 +1,4 @@
+import { DependencyMap, ValueDependency } from "./depMap";
 import { unreachable } from "./lib/unreachable";
 import {
   LastLoaded,
@@ -11,12 +12,14 @@ import {
 } from "./loadable";
 import { Message } from "./message";
 import { MessageHub } from "./messageHub";
+import { makeRestartablePromise } from "./restartablePromise";
 import {
   Action,
   Block,
   BlockUpdateConfig,
   BlockUpdateToolbox,
   Loader,
+  LoaderToolbox,
   Store,
   Unsubscribe,
 } from "./storeTypes";
@@ -34,6 +37,7 @@ type BlockChangeListener = () => void;
 
 interface LoaderState<V> {
   cache: LoaderCache<V>;
+  depMap: DependencyMap;
 }
 
 type LoaderCache<V> =
@@ -52,6 +56,7 @@ type LoaderCache<V> =
   | {
       readonly state: "Loading";
       readonly loadable: LoadableLoading<V>;
+      readonly revalidate: () => void;
       cancelled: boolean;
     }
   | {
@@ -79,8 +84,25 @@ class StoreEntity implements Store {
     return this.getBlockState(block).current;
   };
 
+  setValue = <V>(block: Block<V>, value: V): void => {
+    this.setBlockValue(block, value);
+  };
+
   onBlockChange = <V>(block: Block<V>, fn: BlockChangeListener): Unsubscribe => {
     return this.messageHub.subscribe(block.changed, fn);
+  };
+
+  onInvalidate = <V>(key: Block<V> | Loader<V>, fn: () => void): Unsubscribe => {
+    switch (key.type) {
+      case "Block": {
+        return this.onBlockChange(key, fn);
+      }
+      case "Loader": {
+        return this.messageHub.subscribe(key.invalidated, fn);
+      }
+      default:
+        return unreachable(key);
+    }
   };
 
   load = <V>(loader: Loader<V>): Loadable<V> => {
@@ -88,17 +110,61 @@ class StoreEntity implements Store {
     if (state.cache.state === "Loading") {
       return state.cache.loadable;
     }
+
+    this.precomputeLoaderCacheValidity(state);
     if (state.cache.state === "Fresh") {
       return state.cache.loadable;
     }
 
+    state.depMap.unsubscribeAll();
+
+    const invalidateCache = () => {
+      switch (state.cache.state) {
+        case "Loading": {
+          if (!state.cache.cancelled) {
+            state.cache.revalidate();
+          }
+          break;
+        }
+        case "Fresh": {
+          state.cache = { state: "MaybeStale", loadable: state.cache.loadable };
+          this.messageHub.notify(loader.invalidated, null);
+          break;
+        }
+        case "Error":
+        case "Stale":
+        case "MaybeStale": {
+          break;
+        }
+      }
+    };
+
+    const [revalidate, promise] = makeRestartablePromise(async () => {
+      const nextDepMap = new DependencyMap();
+      const toolbox: LoaderToolbox = {
+        get: (key) => {
+          const unsubscribe = this.onInvalidate(key, invalidateCache);
+          const value = this.get(key);
+          nextDepMap.addValueDep({ key, lastValue: value, unsubscribe });
+          return value;
+        },
+        load: (key) => {
+          const unsubscribe = this.onInvalidate(key, invalidateCache);
+          nextDepMap.addAsyncDep({ key, unsubscribe });
+          return this.load(key).promise();
+        },
+      };
+      const value = await loader.load(toolbox);
+      return [value, nextDepMap] as const;
+    });
+
     const lastLoaded = state.cache.loadable?.lastLoaded;
 
-    const promise = loader.load({});
     const finalPromise = promise
-      .then((value) => {
+      .then(([value, nextDepMap]) => {
         if (!loadingCache.cancelled) {
           this.messageHub.notify(loader.done.message, value);
+          state.depMap = nextDepMap;
           state.cache = {
             state: "Fresh",
             loadable: loadableValue(value),
@@ -120,12 +186,35 @@ class StoreEntity implements Store {
     const loadingCache = {
       state: "Loading",
       loadable,
+      revalidate,
       cancelled: false,
     } as const;
     state.cache = loadingCache;
 
     return loadable;
   };
+
+  private precomputeLoaderCacheValidity<V>(state: LoaderState<V>): LoaderCache<unknown>["state"] {
+    if (state.cache.state !== "MaybeStale") {
+      return state.cache.state;
+    }
+    const allFresh = [...state.depMap.dependencies()].every((d) => {
+      switch (d.key.type) {
+        case "Loader": {
+          // If the dependency is a Loader, check its dependencies recursively.
+          const st = this.getLoaderState(d.key);
+          return this.precomputeLoaderCacheValidity(st) === "Fresh";
+        }
+        case "Block": {
+          return this.get(d.key) === (d as ValueDependency<unknown>).lastValue;
+        }
+        default:
+          unreachable(d.key);
+      }
+    });
+    state.cache = { state: allFresh ? "Fresh" : "Stale", loadable: state.cache.loadable };
+    return state.cache.state;
+  }
 
   dispatch = <R, P>(action: Action<R, P>, payload: P): R => {
     this.messageHub.notify(action.dispatched.message, payload);
@@ -253,7 +342,10 @@ class StoreEntity implements Store {
   private getLoaderState<V>(loader: Loader<V>): LoaderState<V> {
     let state = this.loaderStates.get(loader.id);
     if (state == null) {
-      state = { cache: { state: "Stale", loadable: null } };
+      state = {
+        cache: { state: "Stale", loadable: null },
+        depMap: new DependencyMap(),
+      };
       this.loaderStates.set(loader.id, state);
     }
     return state;

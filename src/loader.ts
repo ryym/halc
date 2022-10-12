@@ -10,6 +10,7 @@ export interface LoaderConfig<V> {
 export const loader = <V>(config: LoaderConfig<V>): Loader<V> => {
   const msgNameBase = config.name ? `loader-${config.name}` : "anonymous-loader";
   const loader: Loader<V> = {
+    type: "Loader",
     id: generateId(),
     load: config.load,
     done: {
@@ -17,6 +18,7 @@ export const loader = <V>(config: LoaderConfig<V>): Loader<V> => {
       loader: () => loader,
       message: defineMessage<V>({ name: `${msgNameBase}-done` }),
     },
+    invalidated: defineMessage<never>({ name: `${msgNameBase}-invalidated` }),
   };
   return loader;
 };
