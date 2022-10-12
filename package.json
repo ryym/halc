@@ -20,7 +20,7 @@
     "build:esm": "npm run build -- --module es2020 --outDir dist/esm",
     "build:w": "npm run build -- --watch",
     "typecheck": "npx tsc",
-    "typecheck:w": "npm run typecheck --watch",
+    "typecheck:w": "npm run typecheck -- --watch",
     "test": "npx jest",
     "test:w": "npx jest --watch",
     "lint": "npx eslint . --ext js,ts",
