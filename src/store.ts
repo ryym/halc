@@ -1,5 +1,6 @@
 import { unreachable } from "./lib/unreachable";
 import {
+  LastLoaded,
   Loadable,
   loadableError,
   LoadableError,
@@ -8,6 +9,7 @@ import {
   loadableValue,
   LoadableValue,
 } from "./loadable";
+import { Message } from "./message";
 import { MessageHub } from "./messageHub";
 import {
   Action,
@@ -226,13 +228,19 @@ class StoreEntity implements Store {
   private setLatestLoaderCachesToBlock<V>(
     updateConfigs: readonly BlockUpdateConfig<V, any>[],
   ): void {
-    updateConfigs.forEach((c) => {
+    const loadedValues = updateConfigs.reduce((ls, c) => {
       if (c.trigger.type === "loaderDone") {
         const loadable = this.getLoaderCache(c.trigger.loader());
         if (loadable?.lastLoaded != null) {
-          this.messageHub.notify(c.trigger.message, loadable.lastLoaded.value);
+          ls.push([c.trigger.message, loadable.lastLoaded]);
         }
       }
+      return ls;
+    }, [] as [Message<any>, LastLoaded<any>][]);
+
+    loadedValues.sort((a, b) => a[1].loadedAt - b[1].loadedAt);
+    loadedValues.forEach(([msg, lastLoaded]) => {
+      this.messageHub.notify(msg, lastLoaded.value);
     });
   }
 
