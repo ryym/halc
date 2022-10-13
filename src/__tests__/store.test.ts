@@ -18,7 +18,7 @@ describe("Store", () => {
   describe("Store.dispatch", () => {
     it("runs given action", () => {
       let num = 3;
-      const addNumAction = action({
+      const addNumAction = action.effect({
         run: (_t, n: number) => {
           num += n;
         },
@@ -31,7 +31,7 @@ describe("Store", () => {
     it("can handle async function", async () => {
       let num = 3;
       const pauser = new Pauser();
-      const addNumAction = action({
+      const addNumAction = action.effect({
         run: async (_t, n: number) => {
           await pauser.pause();
           num += n;
@@ -291,12 +291,8 @@ describe("Store", () => {
           on(subtractNum.dispatched, (v, n) => v - n),
         ],
       });
-      const addNum = action({
-        run: (_t, _n: number) => {},
-      });
-      const subtractNum = action({
-        run: (_t, _n: number) => {},
-      });
+      const addNum = action.empty<number>();
+      const subtractNum = action.empty<number>();
       const store = createStore();
 
       expect(store.get(numState)).toEqual(0);
@@ -359,7 +355,7 @@ describe("Store", () => {
           }),
         ],
       });
-      const addUserAction = action({
+      const addUserAction = action.effect({
         run: async (_t, name: string) => {
           users = [...users, { name }];
         },
