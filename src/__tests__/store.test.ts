@@ -97,7 +97,11 @@ describe("Store", () => {
 
     describe("when any of dependencies changed", () => {
       it("re-computes value (direct dependency changes)", async () => {
-        const numValue = block({ default: () => 2 });
+        const setNumValue = action.empty<number>();
+        const numValue = block({
+          default: () => 2,
+          update: (on) => [on(setNumValue.dispatched, (_, n) => n)],
+        });
         let nCalled = 0;
         const squareValue = loader({
           load: async (t) => {
@@ -105,12 +109,12 @@ describe("Store", () => {
             return t.get(numValue) * t.get(numValue);
           },
         });
-
         const store = createStore();
+
         const values: number[] = [];
         values.push(await store.load(squareValue).promise());
         values.push(await store.load(squareValue).promise());
-        store.setValue(numValue, 7);
+        store.dispatch(setNumValue, 7);
         values.push(await store.load(squareValue).promise());
         values.push(await store.load(squareValue).promise());
 
@@ -118,7 +122,11 @@ describe("Store", () => {
       });
 
       it("re-computes value (indirect dependency changes)", async () => {
-        const numValue = block({ default: () => 2 });
+        const setNumValue = action.empty<number>();
+        const numValue = block({
+          default: () => 2,
+          update: (on) => [on(setNumValue.dispatched, (_, n) => n)],
+        });
         const squareValue = loader({
           load: async (t) => t.get(numValue) * t.get(numValue),
         });
@@ -130,12 +138,12 @@ describe("Store", () => {
             return sq * -1;
           },
         });
-
         const store = createStore();
+
         const values: number[] = [];
         values.push(await store.load(minusValue).promise());
         values.push(await store.load(minusValue).promise());
-        store.setValue(numValue, 9);
+        store.dispatch(setNumValue, 9);
         values.push(await store.load(minusValue).promise());
         values.push(await store.load(minusValue).promise());
 
@@ -149,7 +157,11 @@ describe("Store", () => {
     describe("when any of dependencies changed during computation", () => {
       it("re-computes value and returns the newer result", async () => {
         const pauser = new Pauser();
-        const numValue = block({ default: () => 4 });
+        const setNumValue = action.empty<number>();
+        const numValue = block({
+          default: () => 4,
+          update: (on) => [on(setNumValue.dispatched, (_, n) => n)],
+        });
         const squareValue = loader({
           load: async (t) => {
             const n = t.get(numValue);
@@ -164,14 +176,18 @@ describe("Store", () => {
         // It resolves to the value 9*9 even if the block is changed after
         // the loader computation starts.
         const squarePromise1 = store.load(squareValue).promise();
-        store.setValue(numValue, 9);
+        store.dispatch(setNumValue, 9);
         pauser.resume();
         expect(await squarePromise1).toEqual(81);
       });
 
       it("discards first computation immediately on revalidation", async () => {
         const pauser = new Pauser();
-        const numValue = block({ default: () => 4 });
+        const setNumValue = action.empty<number>();
+        const numValue = block({
+          default: () => 4,
+          update: (on) => [on(setNumValue.dispatched, (_, n) => n)],
+        });
         const squareValue = loader({
           load: async (t) => {
             const n = t.get(numValue);
@@ -186,7 +202,7 @@ describe("Store", () => {
         // The first call that depends on numValue:4 never finishes
         // since we does not resume the pauser. But the promise resolves with no problem.
         const squarePromise1 = store.load(squareValue).promise();
-        store.setValue(numValue, 9);
+        store.dispatch(setNumValue, 9);
         expect(await squarePromise1).toEqual(81);
       });
     });
@@ -221,7 +237,11 @@ describe("Store", () => {
       describe("when any of dependencies has changed", () => {
         it("discards first computation and all calls get newer result", async () => {
           const pauser = new Pauser();
-          const numValue = block({ default: () => 4 });
+          const setNumValue = action.empty<number>();
+          const numValue = block({
+            default: () => 4,
+            update: (on) => [on(setNumValue.dispatched, (_, n) => n)],
+          });
           let nCalled = 0;
           const squareValue = loader({
             load: async (t) => {
@@ -238,7 +258,7 @@ describe("Store", () => {
           const promises: Promise<unknown>[] = [];
           promises.push(store.load(squareValue).promise());
           promises.push(store.load(squareValue).promise());
-          store.setValue(numValue, 9);
+          store.dispatch(setNumValue, 9);
           pauser.resume();
           promises.push(store.load(squareValue).promise());
           promises.push(store.load(squareValue).promise());

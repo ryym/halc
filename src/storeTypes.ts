@@ -3,7 +3,6 @@ import { Message } from "./message";
 
 export interface Store {
   readonly get: <V>(state: Block<V>) => V;
-  readonly setValue: <V>(state: Block<V>, value: V) => void;
   readonly load: <V>(loader: Loader<V>) => Loadable<V>;
   readonly dispatch: <R, P>(action: Action<R, P>, payload: P) => R;
 }

@@ -84,10 +84,6 @@ class StoreEntity implements Store {
     return this.getBlockState(block).current;
   };
 
-  setValue = <V>(block: Block<V>, value: V): void => {
-    this.setBlockValue(block, value);
-  };
-
   onBlockChange = <V>(block: Block<V>, fn: BlockChangeListener): Unsubscribe => {
     return this.messageHub.subscribe(block.changed, fn);
   };
