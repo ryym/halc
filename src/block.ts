@@ -10,13 +10,14 @@ export interface BlockConfig<V> {
 }
 
 export const block = <V>(config: BlockConfig<V>): Block<V> => {
-  const changedMsgName = config.name ? `block-${config.name}-changed` : "anonymous-block-changed";
+  const id = generateId();
+  const blockName = config.name || `block[${id}]`;
   return {
     type: "Block",
-    id: generateId(),
+    id,
     default: config.default,
     isSame: config.isSame || Object.is,
     buildUpdateConfigs: config.update || (() => []),
-    changed: defineMessage<never>({ name: changedMsgName }),
+    changed: defineMessage<never>({ name: `${blockName}-changed` }),
   };
 };
