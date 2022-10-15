@@ -11,6 +11,7 @@ export interface Block<V> {
   readonly type: "Block";
   readonly id: string;
   readonly default: () => V;
+  readonly name: string;
   readonly isSame: Comparer<V>;
   readonly changed: Message<never>;
   readonly buildUpdateConfigs: BlockUpdateConfigBuilder<V>;
@@ -51,6 +52,7 @@ export type BlockUpdater<V, P> = (value: V, payload: P) => V;
 export interface Loader<V> {
   readonly type: "Loader";
   readonly id: string;
+  readonly name: string;
   readonly load: (toolbox: LoaderToolbox) => Promise<V>;
   readonly done: BlockUpdateTrigger<V>;
   readonly invalidated: Message<never>;

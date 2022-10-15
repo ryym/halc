@@ -15,6 +15,7 @@ export const block = <V>(config: BlockConfig<V>): Block<V> => {
   return {
     type: "Block",
     id,
+    name: blockName,
     default: config.default,
     isSame: config.isSame || Object.is,
     buildUpdateConfigs: config.update || (() => []),

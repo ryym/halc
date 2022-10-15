@@ -13,6 +13,7 @@ export const loader = <V>(config: LoaderConfig<V>): Loader<V> => {
   const loader: Loader<V> = {
     type: "Loader",
     id,
+    name: loaderName,
     load: config.load,
     done: {
       type: "loaderDone",
