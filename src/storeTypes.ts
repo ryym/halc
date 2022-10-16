@@ -9,7 +9,6 @@ export interface Store {
   readonly cancelLoad: <V>(loader: Loader<V>, params?: CancelLoadParams) => boolean;
   readonly invalidateCache: (loader: Loader<unknown>) => void;
   readonly getLoaderCache: <V>(loader: Loader<V>) => Loadable<V> | null;
-  readonly setInitialValue: <V>(block: Block<V>, initialValue: V) => V;
   readonly setInitialLoaderCache: <V>(
     loader: Loader<V>,
     params: SetInitialLoaderCacheParams<V>,
@@ -28,8 +27,8 @@ export interface SetInitialLoaderCacheParams<V> {
 export interface Block<V> {
   readonly type: "Block";
   readonly id: string;
+  readonly default: () => V;
   readonly name: string;
-  readonly default: (() => V) | undefined;
   readonly isSame: Comparer<V>;
   readonly changed: Message<never>;
   readonly buildUpdateConfigs: BlockUpdateConfigBuilder<V>;
