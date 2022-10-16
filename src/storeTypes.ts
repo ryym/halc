@@ -10,10 +10,19 @@ export interface Store {
   readonly invalidateCache: (loader: Loader<unknown>) => void;
   readonly getLoaderCache: <V>(loader: Loader<V>) => Loadable<V> | null;
   readonly setInitialValue: <V>(block: Block<V>, initialValue: V) => V;
+  readonly setInitialLoaderCache: <V>(
+    loader: Loader<V>,
+    params: SetInitialLoaderCacheParams<V>,
+  ) => Loadable<V>;
 }
 
 export interface CancelLoadParams {
   readonly markAsStale?: boolean;
+}
+
+export interface SetInitialLoaderCacheParams<V> {
+  readonly value: V;
+  readonly skipLoad?: boolean;
 }
 
 export interface Block<V> {

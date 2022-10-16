@@ -21,6 +21,7 @@ import {
   CancelLoadParams,
   Loader,
   LoaderToolbox,
+  SetInitialLoaderCacheParams,
   Store,
   Unsubscribe,
 } from "./storeTypes";
@@ -64,6 +65,12 @@ type LoaderCache<V> =
       readonly state: "Error";
       readonly loadable: LoadableError<V>;
     };
+
+interface SetLoaderValueParams<V> {
+  readonly value: V;
+  readonly nextDepMap: DependencyMap | null;
+  readonly isTentative?: boolean;
+}
 
 class StoreEntity implements Store {
   private readonly messageHub = new MessageHub();
@@ -156,12 +163,7 @@ class StoreEntity implements Store {
     const finalPromise = promise
       .then(([value, nextDepMap]) => {
         if (!loadingCache.cancelled) {
-          this.messageHub.notify(loader.done.message, value);
-          state.depMap = nextDepMap;
-          state.cache = {
-            state: "Fresh",
-            loadable: loadableValue(value),
-          };
+          this.setLoaderValue(loader, { value, nextDepMap });
         }
         return value;
       })
@@ -271,6 +273,21 @@ class StoreEntity implements Store {
     return this.getBlockState(block, initialValue).current;
   };
 
+  setInitialLoaderCache = <V>(
+    loader: Loader<V>,
+    params: SetInitialLoaderCacheParams<V>,
+  ): Loadable<V> => {
+    const loadable = this.getLoaderCache(loader);
+    if (loadable != null) {
+      return loadable;
+    }
+    return this.setLoaderValue(loader, {
+      value: params.value,
+      isTentative: !params.skipLoad,
+      nextDepMap: null,
+    });
+  };
+
   private getBlockState<V>(block: Block<V>, initialValue?: V): BlockState<V> {
     let state = this.blockStates.get(block.id);
     if (state == null) {
@@ -352,5 +369,19 @@ class StoreEntity implements Store {
       this.loaderStates.set(loader.id, state);
     }
     return state;
+  }
+
+  private setLoaderValue<V>(loader: Loader<V>, params: SetLoaderValueParams<V>): Loadable<V> {
+    const state = this.getLoaderState(loader);
+    const loadable = loadableValue(params.value);
+    state.cache = {
+      state: params.isTentative ? "Stale" : "Fresh",
+      loadable,
+    };
+    if (params.nextDepMap != null) {
+      state.depMap = params.nextDepMap;
+    }
+    this.messageHub.notify(loader.done.message, params.value);
+    return loadable;
   }
 }
