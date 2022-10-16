@@ -10,8 +10,8 @@ export interface Store {
 export interface Block<V> {
   readonly type: "Block";
   readonly id: string;
-  readonly default: () => V;
   readonly name: string;
+  readonly default: (() => V) | undefined;
   readonly isSame: Comparer<V>;
   readonly changed: Message<never>;
   readonly buildUpdateConfigs: BlockUpdateConfigBuilder<V>;

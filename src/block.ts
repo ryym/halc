@@ -3,7 +3,7 @@ import { defineMessage } from "./message";
 import { Block, BlockUpdateConfigBuilder, Comparer } from "./storeTypes";
 
 export interface BlockConfig<V> {
-  readonly default: () => V;
+  readonly default: (() => V) | undefined;
   readonly name?: string;
   readonly isSame?: Comparer<V>;
   readonly update?: BlockUpdateConfigBuilder<V>;

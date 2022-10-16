@@ -270,11 +270,15 @@ class StoreEntity implements Store {
     return this.getLoaderState(loader).cache.loadable;
   };
 
-  private getBlockState<V>(block: Block<V>): BlockState<V> {
+  setInitialValue = <V>(block: Block<V>, initialValue: V): V => {
+    return this.getBlockState(block, initialValue).current;
+  };
+
+  private getBlockState<V>(block: Block<V>, initialValue?: V): BlockState<V> {
     let state = this.blockStates.get(block.id);
     if (state == null) {
       const updateConfigs = this.buildBlockUpdateConfigs(block);
-      state = this.initializeBlockState(block, updateConfigs);
+      state = this.initializeBlockState(block, updateConfigs, initialValue);
       this.blockStates.set(block.id, state);
       this.setLatestLoaderCachesToBlock(updateConfigs);
     }
@@ -292,6 +296,7 @@ class StoreEntity implements Store {
   private initializeBlockState<V>(
     block: Block<V>,
     updateConfigs: readonly BlockUpdateConfig<V, any>[],
+    initialValue?: V,
   ): BlockState<V> {
     const unsubscribes: Unsubscribe[] = [];
     updateConfigs.forEach((c) => {
@@ -302,8 +307,13 @@ class StoreEntity implements Store {
       unsubscribes.push(unsubscribe);
     });
 
+    if (initialValue === undefined && block.default === undefined) {
+      throw `[Halc] accessed to Block ${block.name} but no default or initial value provided`;
+    }
+    const value = initialValue ?? (block.default as () => V)();
+
     return {
-      current: block.default(),
+      current: value,
       clearSubscriptions: () => {
         unsubscribes.forEach((f) => f());
       },
