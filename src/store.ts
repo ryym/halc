@@ -18,6 +18,7 @@ import {
   Block,
   BlockUpdateConfig,
   BlockUpdateToolbox,
+  CancelLoadParams,
   Loader,
   LoaderToolbox,
   Store,
@@ -63,10 +64,6 @@ type LoaderCache<V> =
       readonly state: "Error";
       readonly loadable: LoadableError<V>;
     };
-
-export interface CancelLoadParams {
-  readonly markAsStale?: boolean;
-}
 
 class StoreEntity implements Store {
   private readonly messageHub = new MessageHub();
@@ -245,7 +242,7 @@ class StoreEntity implements Store {
     return true;
   };
 
-  invalidateCache = (loader: Loader<any>): void => {
+  invalidateCache = (loader: Loader<unknown>): void => {
     const state = this.getLoaderState(loader);
     switch (state.cache.state) {
       case "Loading": {
