@@ -92,19 +92,6 @@ class StoreEntity implements Store {
     return this.messageHub.subscribe(block.changed, fn);
   };
 
-  onInvalidate = <V>(key: Block<V> | Loader<V>, fn: () => void): Unsubscribe => {
-    switch (key.type) {
-      case "Block": {
-        return this.onBlockChange(key, fn);
-      }
-      case "Loader": {
-        return this.messageHub.subscribe(key.invalidated, fn);
-      }
-      default:
-        return unreachable(key);
-    }
-  };
-
   load = <V>(loader: Loader<V>): Loadable<V> => {
     const state = this.getLoaderState(loader);
     if (state.cache.state === "Loading") {
@@ -223,6 +210,23 @@ class StoreEntity implements Store {
     } else {
       return handleResult(result as Awaited<R>);
     }
+  };
+
+  onInvalidate = <V>(key: Block<V> | Loader<V>, listener: () => void): Unsubscribe => {
+    switch (key.type) {
+      case "Block": {
+        return this.onBlockChange(key, listener);
+      }
+      case "Loader": {
+        return this.messageHub.subscribe(key.invalidated, listener);
+      }
+      default:
+        return unreachable(key);
+    }
+  };
+
+  onLoad = <V>(loader: Loader<V>, listener: () => void): Unsubscribe => {
+    return this.messageHub.subscribe(loader.done.message, listener);
   };
 
   cancelLoad = <V>(loader: Loader<V>, params: CancelLoadParams = {}): boolean => {

@@ -3,9 +3,10 @@ import { Message } from "./message";
 
 export interface Store {
   readonly get: <V>(state: Block<V>) => V;
-  readonly onInvalidate: <V>(key: Block<V> | Loader<V>, listener: () => void) => Unsubscribe;
   readonly load: <V>(loader: Loader<V>) => Loadable<V>;
   readonly dispatch: <R, P>(action: Action<R, P>, payload: P) => R;
+  readonly onInvalidate: <V>(key: Block<V> | Loader<V>, listener: () => void) => Unsubscribe;
+  readonly onLoad: <V>(loader: Loader<V>, listener: () => void) => Unsubscribe;
   readonly cancelLoad: <V>(loader: Loader<V>, params?: CancelLoadParams) => boolean;
   readonly invalidateCache: (loader: Loader<unknown>) => void;
   readonly getLoaderCache: <V>(loader: Loader<V>) => Loadable<V> | null;
