@@ -82,6 +82,11 @@ export interface LoaderToolbox {
   readonly load: <V>(loader: Loader<V>) => Promise<V>;
 }
 
+export interface Query<V> {
+  readonly loader: Loader<V>;
+  readonly cache: Block<V>;
+}
+
 export interface Action<R, P> {
   readonly run: (toolbox: ActionToolbox, payload: P) => R;
   readonly dispatched: BlockUpdateTrigger<P>;

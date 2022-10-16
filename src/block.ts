@@ -4,13 +4,14 @@ import { Block, BlockUpdateConfigBuilder, Comparer } from "./storeTypes";
 
 export interface BlockConfig<V> {
   readonly default: () => V;
+  readonly id?: string;
   readonly name?: string;
   readonly isSame?: Comparer<V>;
   readonly update?: BlockUpdateConfigBuilder<V>;
 }
 
 export const block = <V>(config: BlockConfig<V>): Block<V> => {
-  const id = generateId();
+  const id = config.id || generateId();
   const blockName = config.name || `block[${id}]`;
   return {
     type: "Block",
