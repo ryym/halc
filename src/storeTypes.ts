@@ -16,6 +16,8 @@ export interface Store {
   ) => Loadable<V>;
 }
 
+export type Dispatch = Store["dispatch"];
+
 export interface CancelLoadParams {
   readonly markAsStale?: boolean;
 }
