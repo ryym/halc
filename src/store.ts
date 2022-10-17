@@ -105,7 +105,7 @@ class StoreEntity implements Store {
 
     state.depMap.unsubscribeAll();
 
-    const invalidateCache = () => {
+    const invalidateCacheViaDependency = () => {
       switch (state.cache.state) {
         case "Loading": {
           if (!state.cache.cancelled) {
@@ -130,13 +130,13 @@ class StoreEntity implements Store {
       const nextDepMap = new DependencyMap();
       const toolbox: LoaderToolbox = {
         get: (key) => {
-          const unsubscribe = this.onInvalidate(key, invalidateCache);
+          const unsubscribe = this.onInvalidate(key, invalidateCacheViaDependency);
           const value = this.get(key);
           nextDepMap.addValueDep({ key, lastValue: value, unsubscribe });
           return value;
         },
         load: (key) => {
-          const unsubscribe = this.onInvalidate(key, invalidateCache);
+          const unsubscribe = this.onInvalidate(key, invalidateCacheViaDependency);
           nextDepMap.addAsyncDep({ key, unsubscribe });
           return this.load(key).promise();
         },
@@ -253,11 +253,13 @@ class StoreEntity implements Store {
     switch (state.cache.state) {
       case "Loading": {
         this.cancelLoad(loader, { markAsStale: true });
+        this.messageHub.notify(loader.invalidated, null);
         return;
       }
       case "Fresh":
       case "MaybeStale": {
         state.cache = { state: "Stale", loadable: state.cache.loadable };
+        this.messageHub.notify(loader.invalidated, null);
         return;
       }
       case "Stale":
