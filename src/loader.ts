@@ -22,6 +22,7 @@ export const loader = <V>(config: LoaderConfig<V>): Loader<V> => {
       message: defineMessage<V>({ name: `${loaderName}-done` }),
     },
     invalidated: defineMessage<never>({ name: `${loaderName}-invalidated` }),
+    started: defineMessage<never>({ name: `${loaderName}-started` }),
   };
   return loader;
 };

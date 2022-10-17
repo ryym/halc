@@ -6,7 +6,8 @@ export interface Store {
   readonly load: <V>(loader: Loader<V>) => Loadable<V>;
   readonly dispatch: <R, P>(action: Action<R, P>, payload: P) => R;
   readonly onInvalidate: <V>(key: Block<V> | Loader<V>, listener: () => void) => Unsubscribe;
-  readonly onLoad: <V>(loader: Loader<V>, listener: () => void) => Unsubscribe;
+  readonly onLoadStart: <V>(loader: Loader<V>, listener: () => void) => Unsubscribe;
+  readonly onLoadEnd: <V>(loader: Loader<V>, listener: () => void) => Unsubscribe;
   readonly cancelLoad: <V>(loader: Loader<V>, params?: CancelLoadParams) => boolean;
   readonly invalidateCache: (loader: Loader<unknown>) => void;
   readonly getLoaderCache: <V>(loader: Loader<V>) => Loadable<V> | null;
@@ -74,8 +75,9 @@ export interface Loader<V> {
   readonly id: string;
   readonly name: string;
   readonly load: (toolbox: LoaderToolbox) => Promise<V>;
-  readonly done: BlockUpdateTrigger<V>;
   readonly invalidated: Message<never>;
+  readonly started: Message<never>;
+  readonly done: BlockUpdateTrigger<V>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

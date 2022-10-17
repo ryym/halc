@@ -173,6 +173,7 @@ class StoreEntity implements Store {
     } as const;
     state.cache = loadingCache;
 
+    this.messageHub.notify(loader.started, null);
     return loadable;
   };
 
@@ -225,7 +226,11 @@ class StoreEntity implements Store {
     }
   };
 
-  onLoad = <V>(loader: Loader<V>, listener: () => void): Unsubscribe => {
+  onLoadStart = <V>(loader: Loader<V>, listener: () => void): Unsubscribe => {
+    return this.messageHub.subscribe(loader.started, listener);
+  };
+
+  onLoadEnd = <V>(loader: Loader<V>, listener: () => void): Unsubscribe => {
     return this.messageHub.subscribe(loader.done.message, listener);
   };
 
