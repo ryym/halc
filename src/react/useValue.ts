@@ -7,12 +7,7 @@ export const useValue = <V>(key: Block<V>): V => {
   const { store } = useHalc();
   const getSnapshot = useCallback(() => store.get(key), [store, key]);
   return useSyncExternalStore(
-    useCallback(
-      (callback) => {
-        return store.onInvalidate(key, callback);
-      },
-      [store, key],
-    ),
+    useCallback((callback) => store.onInvalidate(key, callback), [store, key]),
     getSnapshot,
     getSnapshot,
   );

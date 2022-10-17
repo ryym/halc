@@ -1,28 +1,19 @@
-import { useCallback, useEffect } from "react";
-import { useSyncExternalStore } from "use-sync-external-store/shim";
-import { useHalc } from "./HalcContext";
-import { Loadable } from "../loadable";
 import { Loader } from "../storeTypes";
+import { useLoadable } from "./useLoadable";
 
-export const useLoader = <V>(loader: Loader<V>): Loadable<V> => {
-  const { store } = useHalc();
+export type UseLoaderValue<V> = [latestValue: V, isLoading: boolean];
 
-  const getSnapshot = useCallback(() => {
-    return store.getLoaderCache(loader) || store.load(loader);
-  }, [store, loader]);
-
-  const loadable = useSyncExternalStore(
-    useCallback((callback) => store.onLoad(loader, callback), [store, loader]),
-    getSnapshot,
-    getSnapshot,
-  );
-
-  useEffect(() => {
-    const unsubscribe = store.onInvalidate(loader, () => {
-      store.load(loader);
-    });
-    return unsubscribe;
-  }, [store, loader]);
-
-  return loadable;
+export const useLoader = <V>(loader: Loader<V>): UseLoaderValue<V> => {
+  const loadable = useLoadable(loader);
+  switch (loadable.state) {
+    case "hasValue":
+      return [loadable.value, false];
+    case "hasError":
+      throw loadable.error;
+    case "loading":
+      if (loadable.lastLoaded === undefined) {
+        throw loadable.promise();
+      }
+      return [loadable.lastLoaded.value, true];
+  }
 };
