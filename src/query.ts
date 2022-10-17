@@ -21,10 +21,14 @@ export const query = <V>(config: QueryConfig<V>): Query<V> => {
   });
   const cacheBlock = block({
     default: () => {
-      if (config.default == null) {
-        throw new QueryNoCacheError(queryName);
+      if (config.default != null) {
+        return config.default();
       }
-      return config.default();
+      return new Proxy({} as any, {
+        get(_target, prop) {
+          throw new QueryCacheProxyAccessedError(queryName, prop.toString());
+        },
+      });
     },
     id: `${idBase}-q-cache`,
     name: `${queryName}-cache`,
@@ -41,6 +45,14 @@ export class QueryNoCacheError extends Error {
   constructor(queryName: string) {
     super(
       `[Halc] cache of Query ${queryName} accessed but not loaded yet and no initial value provided`,
+    );
+  }
+}
+
+export class QueryCacheProxyAccessedError extends Error {
+  constructor(queryName: string, prop: string) {
+    super(
+      `[Halc] Query cache proxy accessed before first value loaded: query:${queryName}, property:${prop}`,
     );
   }
 }
