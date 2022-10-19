@@ -10,7 +10,8 @@
     "declaration": true,
     "declarationDir": "dist/types",
     "outDir": "dist/cjs",
-    "noEmit": true
+    "noEmit": true,
+    "jsx": "react-jsx"
   },
-  "include": ["src"]
+  "include": ["src", "sample"]
 }
