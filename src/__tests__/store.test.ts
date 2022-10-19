@@ -97,7 +97,7 @@ describe("Store", () => {
 
     describe("when any of dependencies changed", () => {
       it("re-computes value (direct dependency changes)", async () => {
-        const setNumValue = action.empty<number>();
+        const setNumValue = action.param<number>();
         const numValue = block({
           default: () => 2,
           update: (on) => [on(setNumValue.dispatched, (_, n) => n)],
@@ -122,7 +122,7 @@ describe("Store", () => {
       });
 
       it("re-computes value (indirect dependency changes)", async () => {
-        const setNumValue = action.empty<number>();
+        const setNumValue = action.param<number>();
         const numValue = block({
           default: () => 2,
           update: (on) => [on(setNumValue.dispatched, (_, n) => n)],
@@ -157,7 +157,7 @@ describe("Store", () => {
     describe("when any of dependencies changed during computation", () => {
       it("re-computes value and returns the newer result", async () => {
         const pauser = new Pauser();
-        const setNumValue = action.empty<number>();
+        const setNumValue = action.param<number>();
         const numValue = block({
           default: () => 4,
           update: (on) => [on(setNumValue.dispatched, (_, n) => n)],
@@ -183,7 +183,7 @@ describe("Store", () => {
 
       it("discards first computation immediately on revalidation", async () => {
         const pauser = new Pauser();
-        const setNumValue = action.empty<number>();
+        const setNumValue = action.param<number>();
         const numValue = block({
           default: () => 4,
           update: (on) => [on(setNumValue.dispatched, (_, n) => n)],
@@ -237,7 +237,7 @@ describe("Store", () => {
       describe("when any of dependencies has changed", () => {
         it("discards first computation and all calls get newer result", async () => {
           const pauser = new Pauser();
-          const setNumValue = action.empty<number>();
+          const setNumValue = action.param<number>();
           const numValue = block({
             default: () => 4,
             update: (on) => [on(setNumValue.dispatched, (_, n) => n)],
@@ -311,8 +311,8 @@ describe("Store", () => {
           on(subtractNum.dispatched, (v, n) => v - n),
         ],
       });
-      const addNum = action.empty<number>();
-      const subtractNum = action.empty<number>();
+      const addNum = action.param<number>();
+      const subtractNum = action.param<number>();
       const store = createStore();
 
       expect(store.get(numState)).toEqual(0);

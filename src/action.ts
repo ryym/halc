@@ -1,27 +1,41 @@
 import { defineMessage } from "./message";
-import { Action, ActionToolbox } from "./storeTypes";
+import { ActionToolbox, EffectAction, ParamAction } from "./storeTypes";
 
-export interface ActionConfig<R, P> {
+export interface EffectActionConfig<P, R> {
   readonly run: (t: ActionToolbox, payload: P) => R;
   readonly name?: string;
 }
 
+export interface ParamActionConfig {
+  readonly name?: string;
+}
+
 export const action = Object.freeze({
-  empty: <P>(): Action<void, P> => {
-    return action.effect({ run: (_t, _p: P) => {} });
+  param: <P>(config: ParamActionConfig = {}): ParamAction<P> => {
+    const actionName = config.name || "anonymous-param-action";
+    return {
+      type: "paramAction",
+      name: actionName,
+      dispatched: {
+        type: "action",
+        message: defineMessage<P>({ name: `action-${actionName}-dispatched` }),
+      },
+    };
   },
 
-  effect: <R, P>(config: ActionConfig<R, P>): Action<R, P> => {
-    const msgNameBase = config.name ? `action-${config.name}` : "anonymous-action";
+  effect: <P, R>(config: EffectActionConfig<P, R>): EffectAction<P, R> => {
+    const actionName = config.name || "anonymous-effect-action";
     return {
+      type: "effectAction",
+      name: actionName,
       run: config.run,
       dispatched: {
         type: "action",
-        message: defineMessage<P>({ name: `${msgNameBase}-dispatched` }),
+        message: defineMessage<P>({ name: `action-${actionName}-dispatched` }),
       },
       done: {
         type: "action",
-        message: defineMessage<Awaited<R>>({ name: `${msgNameBase}-done` }),
+        message: defineMessage<Awaited<R>>({ name: `action-${actionName}-done` }),
       },
     };
   },

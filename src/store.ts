@@ -14,7 +14,7 @@ import { Message } from "./message";
 import { MessageHub } from "./messageHub";
 import { makeRestartablePromise } from "./restartablePromise";
 import {
-  Action,
+  AnyAction,
   Block,
   BlockUpdateConfig,
   BlockUpdateToolbox,
@@ -199,17 +199,27 @@ class StoreEntity implements Store {
     return state.cache.state;
   }
 
-  dispatch = <R, P>(action: Action<R, P>, payload: P): R => {
-    this.messageHub.notify(action.dispatched.message, payload);
-    const handleResult = (result: Awaited<R>): R => {
-      this.messageHub.notify(action.done.message, result);
-      return result;
-    };
-    const result = action.run({}, payload);
-    if (result instanceof Promise) {
-      return result.then(handleResult) as R;
-    } else {
-      return handleResult(result as Awaited<R>);
+  dispatch = <P, R>(action: AnyAction<P, R>, payload: P): R => {
+    switch (action.type) {
+      case "paramAction": {
+        this.messageHub.notify(action.dispatched.message, payload);
+        return undefined as R;
+      }
+      case "effectAction": {
+        this.messageHub.notify(action.dispatched.message, payload);
+        const handleResult = (result: Awaited<R>): R => {
+          this.messageHub.notify(action.done.message, result);
+          return result;
+        };
+        const result = action.run({}, payload);
+        if (result instanceof Promise) {
+          return result.then(handleResult) as R;
+        } else {
+          return handleResult(result as Awaited<R>);
+        }
+      }
+      default:
+        return unreachable(action);
     }
   };
 

@@ -4,7 +4,7 @@ import { Message } from "./message";
 export interface Store {
   readonly get: <V>(state: Block<V>) => V;
   readonly load: <V>(loader: Loader<V>) => Loadable<V>;
-  readonly dispatch: <R, P>(action: Action<R, P>, payload: P) => R;
+  readonly dispatch: <P, R>(action: AnyAction<P, R>, payload: P) => R;
   readonly onInvalidate: <V>(key: Block<V> | Loader<V>, listener: () => void) => Unsubscribe;
   readonly onLoadStart: <V>(loader: Loader<V>, listener: () => void) => Unsubscribe;
   readonly onLoadEnd: <V>(loader: Loader<V>, listener: () => void) => Unsubscribe;
@@ -90,11 +90,21 @@ export interface Query<V> {
   readonly cache: Block<V>;
 }
 
-export interface Action<R, P> {
+export interface ParamAction<P> {
+  readonly type: "paramAction";
+  readonly name: string;
+  readonly dispatched: BlockUpdateTrigger<P>;
+}
+
+export interface EffectAction<P, R> {
+  readonly type: "effectAction";
+  readonly name: string;
   readonly run: (toolbox: ActionToolbox, payload: P) => R;
   readonly dispatched: BlockUpdateTrigger<P>;
   readonly done: BlockUpdateTrigger<Awaited<R>>;
 }
+
+export type AnyAction<P, R> = ParamAction<P> | EffectAction<P, R>;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ActionToolbox {
