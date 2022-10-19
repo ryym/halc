@@ -80,7 +80,6 @@ export interface Loader<V> {
   readonly done: BlockUpdateTrigger<V>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface LoaderToolbox {
   readonly get: <V>(state: Block<V>) => V;
   readonly load: <V>(loader: Loader<V>) => Promise<V>;
