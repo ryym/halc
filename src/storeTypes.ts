@@ -68,7 +68,7 @@ export interface BlockUpdateToolbox {
   readonly invlaidate: (loader: Loader<any>) => void;
 }
 
-export type BlockUpdater<V, P> = (value: V, payload: P) => V;
+export type BlockUpdater<V, P> = (value: V, payload: P) => V | void;
 
 export interface Loader<V> {
   readonly type: "Loader";

@@ -321,8 +321,11 @@ class StoreEntity implements Store {
     const unsubscribes: Unsubscribe[] = [];
     updateConfigs.forEach((c) => {
       const unsubscribe = this.messageHub.subscribe(c.trigger.message, (payload) => {
-        const value = c.update(this.get(block), payload);
-        this.setBlockValue(block, value);
+        const current = this.get(block);
+        const value = c.update(current, payload);
+        if (value !== undefined && !block.isSame(current, value)) {
+          this.setBlockValue(block, value);
+        }
       });
       unsubscribes.push(unsubscribe);
     });
