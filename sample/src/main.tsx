@@ -1,9 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import * as halc from "../../dist/esm";
+import { createStore } from "../../dist/esm";
+import { HalcProvider } from "../../dist/esm/react";
+import { Routes } from "./Routes";
+
+export const store = createStore();
 
 function App() {
-  return <h1>Hello: {JSON.stringify(halc)}</h1>;
+  return (
+    <HalcProvider store={store}>
+      <Routes />
+    </HalcProvider>
+  );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
