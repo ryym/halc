@@ -19,6 +19,7 @@ import {
   BlockUpdateConfig,
   BlockUpdateToolbox,
   CancelLoadParams,
+  EffectAction,
   Loader,
   LoaderToolbox,
   SetInitialLoaderCacheParams,
@@ -72,10 +73,15 @@ interface SetLoaderValueParams<V> {
   readonly isTentative?: boolean;
 }
 
+export interface EffectActionState {
+  runningCount: number;
+}
+
 class StoreEntity implements Store {
   private readonly messageHub = new MessageHub();
   private readonly blockStates = new Map<string, BlockState<any>>();
   private readonly loaderStates = new Map<string, LoaderState<any>>();
+  private readonly effectActionStates = new Map<string, EffectActionState>();
   private readonly blockUpdateToolbox: BlockUpdateToolbox;
 
   constructor() {
@@ -206,22 +212,40 @@ class StoreEntity implements Store {
         return undefined as R;
       }
       case "effectAction": {
-        this.messageHub.notify(action.dispatched.message, payload);
-        const handleResult = (result: Awaited<R>): R => {
-          this.messageHub.notify(action.done.message, result);
-          return result;
-        };
-        const result = action.run({}, payload);
-        if (result instanceof Promise) {
-          return result.then(handleResult) as R;
-        } else {
-          return handleResult(result as Awaited<R>);
-        }
+        return this.dispatchEffectAction(action, payload);
       }
       default:
         return unreachable(action);
     }
   };
+
+  private dispatchEffectAction<P, R>(action: EffectAction<P, R>, payload: P): R {
+    this.getEffectActionState(action).runningCount += 1;
+    this.messageHub.notify(action.dispatched.message, payload);
+
+    const handleResult = (result: Awaited<R>): R => {
+      this.messageHub.notify(action.done.message, result);
+      return result;
+    };
+    const onSettled = () => {
+      const state = this.getEffectActionState(action);
+      state.runningCount = Math.max(0, state.runningCount - 1);
+    };
+
+    const result = action.run({}, payload);
+    if (result instanceof Promise) {
+      return result.then((r) => {
+        onSettled();
+        return handleResult(r);
+      }) as R;
+    } else {
+      try {
+        return handleResult(result as Awaited<R>);
+      } finally {
+        onSettled();
+      }
+    }
+  }
 
   onInvalidate = <V>(key: Block<V> | Loader<V>, listener: () => void): Unsubscribe => {
     switch (key.type) {
@@ -236,12 +260,20 @@ class StoreEntity implements Store {
     }
   };
 
-  onLoadStart = <V>(loader: Loader<V>, listener: () => void): Unsubscribe => {
+  onLoadStart = (loader: Loader<any>, listener: () => void): Unsubscribe => {
     return this.messageHub.subscribe(loader.started, listener);
   };
 
-  onLoadEnd = <V>(loader: Loader<V>, listener: () => void): Unsubscribe => {
+  onLoadSuccess = (loader: Loader<any>, listener: () => void): Unsubscribe => {
     return this.messageHub.subscribe(loader.done.message, listener);
+  };
+
+  onActionDispatch = (action: AnyAction<any, any>, listener: () => void): Unsubscribe => {
+    return this.messageHub.subscribe(action.dispatched.message, listener);
+  };
+
+  onActionSuccess = (action: EffectAction<any, any>, listener: () => void): Unsubscribe => {
+    return this.messageHub.subscribe(action.done.message, listener);
   };
 
   cancelLoad = <V>(loader: Loader<V>, params: CancelLoadParams = {}): boolean => {
@@ -397,5 +429,18 @@ class StoreEntity implements Store {
     }
     this.messageHub.notify(loader.done.message, params.value);
     return loadable;
+  }
+
+  isActionRunning = (action: EffectAction<unknown, unknown>): boolean => {
+    return this.getEffectActionState(action).runningCount > 0;
+  };
+
+  private getEffectActionState(action: EffectAction<any, any>): EffectActionState {
+    let state = this.effectActionStates.get(action.id);
+    if (state == null) {
+      state = { runningCount: 0 };
+      this.effectActionStates.set(action.id, state);
+    }
+    return state;
   }
 }

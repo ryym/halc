@@ -16,7 +16,7 @@ export const useLoadable = <V>(loader: Loader<V>): Loadable<V> => {
       (callback) => {
         const unsubscribes = [
           store.onLoadStart(loader, callback),
-          store.onLoadEnd(loader, callback),
+          store.onLoadSuccess(loader, callback),
         ];
         return () => unsubscribes.forEach((f) => f());
       },

@@ -1,3 +1,4 @@
+import { generateId } from "./globalId";
 import { defineMessage } from "./message";
 import { ActionToolbox, EffectAction, ParamAction } from "./storeTypes";
 
@@ -27,6 +28,7 @@ export const action = Object.freeze({
     const actionName = config.name || "anonymous-effect-action";
     return {
       type: "effectAction",
+      id: generateId(),
       name: actionName,
       run: config.run,
       dispatched: {

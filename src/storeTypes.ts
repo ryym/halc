@@ -6,8 +6,10 @@ export interface Store {
   readonly load: <V>(loader: Loader<V>) => Loadable<V>;
   readonly dispatch: <P, R>(action: AnyAction<P, R>, payload: P) => R;
   readonly onInvalidate: <V>(key: Block<V> | Loader<V>, listener: () => void) => Unsubscribe;
-  readonly onLoadStart: <V>(loader: Loader<V>, listener: () => void) => Unsubscribe;
-  readonly onLoadEnd: <V>(loader: Loader<V>, listener: () => void) => Unsubscribe;
+  readonly onLoadStart: (loader: Loader<any>, listener: () => void) => Unsubscribe;
+  readonly onLoadSuccess: (loader: Loader<any>, listener: () => void) => Unsubscribe;
+  readonly onActionDispatch: (action: EffectAction<any, any>, listener: () => void) => Unsubscribe;
+  readonly onActionSuccess: (action: EffectAction<any, any>, listener: () => void) => Unsubscribe;
   readonly cancelLoad: <V>(loader: Loader<V>, params?: CancelLoadParams) => boolean;
   readonly invalidateCache: (loader: Loader<unknown>) => void;
   readonly getLoaderCache: <V>(loader: Loader<V>) => Loadable<V> | null;
@@ -15,6 +17,7 @@ export interface Store {
     loader: Loader<V>,
     params: SetInitialLoaderCacheParams<V>,
   ) => Loadable<V>;
+  readonly isActionRunning: (action: EffectAction<unknown, unknown>) => boolean;
 }
 
 export type Dispatch = Store["dispatch"];
@@ -98,6 +101,7 @@ export interface ParamAction<P> {
 
 export interface EffectAction<P, R> {
   readonly type: "effectAction";
+  readonly id: string;
   readonly name: string;
   readonly run: (toolbox: ActionToolbox, payload: P) => R;
   readonly dispatched: BlockUpdateTrigger<P>;
