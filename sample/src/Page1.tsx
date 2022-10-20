@@ -1,23 +1,17 @@
 import { FormEvent, useState } from "react";
 import { action, query } from "../../dist/esm";
 import { useDispatch, useQuery } from "../../dist/esm/react";
+import { useActionState } from "../../dist/esm/react/useActionState";
 
 export function Page1() {
-  const [users] = useQuery(userListQuery);
+  const [users, isLoading] = useQuery(userListQuery);
   const dispatch = useDispatch();
-
-  // TODO: Should be managed by Store.
-  const [addingUser, setAddingUser] = useState(false);
+  const [addingUser] = useActionState(addUserAction);
 
   const [input, setInput] = useState("");
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    setAddingUser(true);
-    try {
-      dispatch(addUserAction, input);
-    } finally {
-      setAddingUser(false);
-    }
+    dispatch(addUserAction, input);
   };
 
   return (
@@ -31,7 +25,10 @@ export function Page1() {
       </form>
       <hr />
       <div>
-        <h2>All users</h2>
+        <p>
+          <span style={{ fontSize: "1.5rem" }}>All users</span>
+          {isLoading && <span style={{ marginLeft: "1em" }}>(refreshing...)</span>}
+        </p>
         {users.map((user) => (
           <div key={user.id} style={user.id === 0 ? { color: "#ccc" } : {}}>
             id: {user.id}, name: {user.name}
@@ -69,14 +66,14 @@ const backend = {
   ],
 
   addUser: async (name: string) => {
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 400));
     const { users } = backend;
     const lastId = users.length === 0 ? 0 : users[users.length - 1].id;
     users.push({ id: lastId + 1, name });
   },
 
   fetchUsers: async () => {
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 600));
     return [...backend.users];
   },
 };
